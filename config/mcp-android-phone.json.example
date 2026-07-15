@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "Android phone": {
+      "command": "/exec-daemon/node",
+      "args": [
+        "/agent/mcp-bridge/bridge.mjs",
+        "--url",
+        "http://127.0.0.1:18090/mcp",
+        "--verbose"
+      ],
+      "env": {
+        "POCKET_MCP_API_KEY": "YOUR_POCKET_MCP_API_KEY",
+        "NO_PROXY": "127.0.0.1,localhost"
+      }
+    }
+  }
+}
