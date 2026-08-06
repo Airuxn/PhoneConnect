@@ -2,7 +2,6 @@
 # Validate PhoneConnect environment and phone reachability.
 set -euo pipefail
 
-DIR="$(cd "$(dirname "$0")" && pwd)"
 OK=0
 WARN=0
 FAIL=0

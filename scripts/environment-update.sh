@@ -21,8 +21,10 @@ if ! pgrep -x tailscaled >/dev/null; then
   sleep 3
 fi
 
-[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && sudo tailscale --socket=/var/run/tailscale/tailscaled.sock up \
-  --auth-key="$TAILSCALE_AUTH_KEY" --accept-routes --accept-dns --hostname=cursor-cloud-agent || true
+if [[ -n "${TAILSCALE_AUTH_KEY:-}" ]]; then
+  sudo tailscale --socket=/var/run/tailscale/tailscaled.sock up \
+    --auth-key="$TAILSCALE_AUTH_KEY" --accept-routes --accept-dns --hostname=cursor-cloud-agent || true
+fi
 
 if ! pgrep -f phone-http-proxy.py >/dev/null; then
   POCKET_MCP_TARGET="$POCKET_MCP_TARGET" \

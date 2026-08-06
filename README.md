@@ -1,33 +1,26 @@
 # PhoneConnect
 
-> ⚠️ **TEST PROJECT** ⚠️  
-> Experimental setup for connecting an Android phone to a Cursor Cloud Agent. Not a production product.
+Experimental bridge: connect **your Android phone** to a **Cursor Cloud Agent** so the agent can use [PocketMCP](https://github.com/supermemoryai/pocketmcp) tools (tap, apps, screen state) over a **Tailscale** SOCKS5 link.
 
-Connect **your Android phone** to a **Cursor Cloud Agent** so the AI can use [PocketMCP](https://github.com/supermemoryai/pocketmcp) tools (tap, apps, screen state, and more) over a secure **Tailscale** link.
+**Status:** experimental · **Requires:** Android + PocketMCP + Tailscale + Cursor Cloud Agent · [MIT](LICENSE)
 
-**Works for anyone** with: an Android device, a Tailscale account, and a Cursor Cloud Agent environment.
+[![CI](https://github.com/Airuxn/PhoneConnect/actions/workflows/ci.yml/badge.svg)](https://github.com/Airuxn/PhoneConnect/actions/workflows/ci.yml)
 
----
-
-## What you get
-
-- Cursor agent can **see and control your phone** through MCP (same idea as automating a device from the cloud).
-- Traffic goes through **Tailscale SOCKS5** — required because direct cloud → phone TCP often fails.
-- Open source bridge scripts + MCP stdio adapter — you configure secrets; nothing is hardcoded to one user or device.
+> Not a production product. API and scripts may change without notice.
 
 ---
 
-## Quick start (5 steps)
+## Quick start
 
 ### 1. Phone
 
 - Install **Tailscale** + **PocketMCP** on Android.
 - Set a PocketMCP **API key** in the app.
-- Note your phone’s **Tailscale IP** (e.g. `100.x.y.z`).
+- Note your phone's **Tailscale IP** (e.g. `100.x.y.z`).
 
 ### 2. Tailscale key
 
-- Create an **auth key** at [login.tailscale.com/admin/settings/keys](https://login.tailscale.com/admin/settings/keys).
+Create an auth key at [login.tailscale.com/admin/settings/keys](https://login.tailscale.com/admin/settings/keys).
 
 ### 3. Cursor secrets
 
@@ -44,8 +37,8 @@ Template: [`config/secrets.env.example`](config/secrets.env.example)
 
 ### 4. Cursor environment scripts
 
-- **Update script:** paste [`scripts/environment-update.sh`](scripts/environment-update.sh)
-- **MCP config:** copy [`config/mcp-android-phone.json.example`](config/mcp-android-phone.json.example) (set your API key)
+- **Update script:** [`scripts/environment-update.sh`](scripts/environment-update.sh)
+- **MCP config:** [`config/mcp-android-phone.json.example`](config/mcp-android-phone.json.example) (set your API key)
 
 ### 5. Test
 
@@ -55,7 +48,15 @@ bash scripts/start-gsm-access.sh
 POCKET_MCP_URL=$POCKET_MCP_TARGET/mcp node scripts/gsm-api.mjs screen_state
 ```
 
-**Full walkthrough:** [**docs/setup-guide.md**](docs/setup-guide.md) (recommended for first-time setup)
+**First-time setup:** [docs/setup-guide.md](docs/setup-guide.md)
+
+---
+
+## What you get
+
+- Cursor agent **sees and controls your phone** via MCP.
+- Traffic uses **Tailscale SOCKS5** — direct cloud → phone TCP often fails without it.
+- Open bridge scripts + MCP stdio adapter — secrets in Cursor env, nothing hardcoded to one user.
 
 ---
 
@@ -64,7 +65,7 @@ POCKET_MCP_URL=$POCKET_MCP_TARGET/mcp node scripts/gsm-api.mjs screen_state
 ```
 Cursor MCP → bridge.mjs → http://127.0.0.1:18090/mcp (phone-http-proxy.py)
   → SOCKS5 127.0.0.1:1055 (Tailscale userspace)
-  → http://YOUR_TAILSCALE_IP:8080 (PocketMCP on your phone)
+  → http://YOUR_TAILSCALE_IP:8080 (PocketMCP on phone)
 ```
 
 ---
@@ -73,20 +74,18 @@ Cursor MCP → bridge.mjs → http://127.0.0.1:18090/mcp (phone-http-proxy.py)
 
 | Path | Description |
 |------|-------------|
-| [`scripts/check-setup.sh`](scripts/check-setup.sh) | Validate secrets, Tailscale, and phone reachability |
+| [`scripts/check-setup.sh`](scripts/check-setup.sh) | Validate secrets, Tailscale, phone reachability |
 | [`scripts/start-gsm-access.sh`](scripts/start-gsm-access.sh) | Start proxy + health check |
 | [`scripts/environment-update.sh`](scripts/environment-update.sh) | Paste into Cursor Environment |
 | [`mcp-bridge/bridge.mjs`](mcp-bridge/bridge.mjs) | MCP stdio ↔ PocketMCP HTTP |
-| [`docs/setup-guide.md`](docs/setup-guide.md) | Complete setup for any user |
+| [`docs/setup-guide.md`](docs/setup-guide.md) | Complete setup walkthrough |
 | [`docs/memory/`](docs/memory/) | Optional agent playbooks |
 
 ---
 
 ## Using the agent on your phone
 
-After setup, enable the **Android phone** MCP server in your cloud agent. The agent can call PocketMCP tools.
-
-**Golden rule:** after every phone action → **`screen_state`** → verify → then continue.
+Enable the **Android phone** MCP server in your cloud agent. After every phone action → call **`screen_state`** → verify → continue.
 
 ---
 
@@ -97,21 +96,15 @@ After setup, enable the **Android phone** MCP server in your cloud agent. The ag
 | Phone | Android + PocketMCP + Tailscale |
 | Cloud | Cursor Cloud Agent environment |
 | Network | Phone and agent on the **same Tailscale tailnet** |
-| Secrets | API key + Tailscale auth key + phone IP (`POCKET_MCP_TARGET`) |
+| Secrets | API key + Tailscale auth key + `POCKET_MCP_TARGET` |
 
 ---
 
 ## Security
 
-PhoneConnect does **not** host a public website — there is no open API in this repo to attack. Safety depends on **how you configure secrets and Tailscale**:
+No public API in this repo — safety depends on **Tailscale ACLs** and **secret handling**. Never commit real keys; treat PocketMCP and Tailscale auth keys like root credentials for your phone.
 
-- **Never commit real keys** — use [`config/secrets.env.example`](config/secrets.env.example) as a template only. Store values in **Cursor Dashboard → Environment → Secrets**.
-- **`TAILSCALE_AUTH_KEY`** joins your tailnet. Anyone with this key can attempt to reach devices on that network. Use scoped/ephemeral keys where possible.
-- **`POCKET_MCP_API_KEY`** grants control of PocketMCP on your phone (tap, apps, screen content). Treat it like a root password for the device.
-- **Same tailnet required** — phone and cloud agent must share your Tailscale network; restrict access with [Tailscale ACLs](https://tailscale.com/kb/1018/acls).
-- **Rotate immediately** if a key was ever pasted into git, chat, or a public file. See [SECURITY.md](SECURITY.md) for details and reporting.
-
-There is no built-in rate limiting or multi-user auth — each deployment is a **private bridge** between **your** Cursor environment and **your** phone.
+See [SECURITY.md](SECURITY.md) for the security model, deployment guidance, and reporting.
 
 ---
 
@@ -127,7 +120,7 @@ There is no built-in rate limiting or multi-user auth — each deployment is a *
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE).
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -141,9 +134,11 @@ MIT License — see [LICENSE](LICENSE).
 
 ## 📞 Support
 
+For support and questions:
+
 - [Complete setup guide](docs/setup-guide.md)
-- [Security](SECURITY.md)
-- [GitHub Issues](https://github.com/Airuxn/PhoneConnect/issues)
+- Create an issue on [GitHub](https://github.com/Airuxn/PhoneConnect/issues)
+- Security: see [SECURITY.md](SECURITY.md)
 
 ---
 

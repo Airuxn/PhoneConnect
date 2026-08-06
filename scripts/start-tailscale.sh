@@ -15,13 +15,13 @@ if [ -z "${TAILSCALE_AUTH_KEY:-}" ]; then
 fi
 
 if ! pgrep -x tailscaled >/dev/null 2>&1; then
-  sudo tailscaled \
+  sudo sh -c "tailscaled \
     --tun=userspace-networking \
-    --outbound-http-proxy-listen="127.0.0.1:${HTTP_PROXY_PORT}" \
-    --socks5-server="127.0.0.1:${SOCKS_PORT}" \
-    --state="${STATE_DIR}/tailscaled.state" \
-    --socket="${SOCKET}" \
-    >"${LOG}" 2>&1 &
+    --outbound-http-proxy-listen=127.0.0.1:${HTTP_PROXY_PORT} \
+    --socks5-server=127.0.0.1:${SOCKS_PORT} \
+    --state=${STATE_DIR}/tailscaled.state \
+    --socket=${SOCKET} \
+    >>${LOG} 2>&1" &
   sleep 3
 fi
 

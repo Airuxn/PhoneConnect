@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell and Node checks
+        run: |
+          for f in scripts/*.sh; do bash -n "$f"; done
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            sudo apt-get install -y -qq shellcheck
+          fi
+          shellcheck scripts/*.sh
+          node --check scripts/gsm-api.mjs
+          node --check mcp-bridge/bridge.mjs
+
+      - name: Sync tags to HEAD
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git tag -fa latest -m "Latest main"
+          git push origin refs/tags/latest --force
+          VERSION=""
+          if [ -f app/build.gradle.kts ]; then
+            VERSION=$(grep -m1 'versionName' app/build.gradle.kts | sed 's/.*"\([^"]*\)".*/\1/')
+          elif [ -f package.json ]; then
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          if [ -n "$VERSION" ]; then
+            git tag -fa "v${VERSION}" -m "Release v${VERSION}"
+            git push origin "refs/tags/v${VERSION}" --force
+          fi
