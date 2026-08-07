@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   scripts:
@@ -43,6 +43,15 @@ jobs:
           node --check scripts/gsm-api.mjs
           node --check mcp-bridge/bridge.mjs
           npm ci --prefix mcp-bridge
+          npm audit --prefix mcp-bridge --audit-level=critical
+
+      - name: Bridge requires API key
+        run: |
+          set +e
+          POCKET_MCP_URL=http://127.0.0.1:18090/mcp node mcp-bridge/bridge.mjs </dev/null >/dev/null 2>&1
+          code=$?
+          set -e
+          test "$code" -ne 0
 
       - name: Python proxy script
         run: python3 -m py_compile scripts/phone-http-proxy.py
@@ -58,28 +67,3 @@ jobs:
               if s and not s.startswith('#'):
                   assert '=' in line, line
           "
-
-  sync-tags:
-    name: Sync release tags
-    if: github.event_name == 'push'
-    needs: [scripts]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Sync tags to HEAD
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
-          git tag -fa latest -m "Latest main"
-          git push origin refs/tags/latest --force
-          VERSION=$(node -p "require('./mcp-bridge/package.json').version")
-          if [ -n "$VERSION" ]; then
-            git tag -fa "v${VERSION}" -m "Release v${VERSION}"
-            git push origin "refs/tags/v${VERSION}" --force
-          fi
