@@ -12,11 +12,10 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  scripts:
-    name: Shell, Node, and Python checks
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,3 +66,17 @@ jobs:
               if s and not s.startswith('#'):
                   assert '=' in line, line
           "
+
+      - name: Sync tags to HEAD
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git tag -fa latest -m "Latest main"
+          git push origin refs/tags/latest --force
+          VERSION=$(node -p "require('./mcp-bridge/package.json').version")
+          if [ -n "$VERSION" ]; then
+            git tag -fa "v${VERSION}" -m "Release v${VERSION}"
+            git push origin "refs/tags/v${VERSION}" --force
+          fi
