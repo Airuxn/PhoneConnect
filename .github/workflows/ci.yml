@@ -50,12 +50,14 @@ jobs:
       - name: Validate example configs
         run: |
           python3 -c "import json; json.load(open('config/mcp-android-phone.json.example'))"
-          python3 - <<'PY'
+          python3 -c "
           from pathlib import Path
-          for path in Path("config").glob("*.example"):
-              text = path.read_text(encoding="utf-8")
-              assert "=" in text or path.suffix == ".json.example", path
-          PY
+          env = Path('config/secrets.env.example').read_text(encoding='utf-8')
+          for line in env.splitlines():
+              s = line.strip()
+              if s and not s.startswith('#'):
+                  assert '=' in line, line
+          "
 
   sync-tags:
     name: Sync release tags
