@@ -15,35 +15,68 @@ permissions:
   contents: write
 
 jobs:
-  test:
+  scripts:
+    name: Shell, Node, and Python checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Shell and Node checks
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mcp-bridge/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Shell syntax and ShellCheck
         run: |
           for f in scripts/*.sh; do bash -n "$f"; done
-          if ! command -v shellcheck >/dev/null 2>&1; then
-            sudo apt-get install -y -qq shellcheck
-          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
           shellcheck scripts/*.sh
+
+      - name: Node syntax and bridge dependencies
+        run: |
           node --check scripts/gsm-api.mjs
           node --check mcp-bridge/bridge.mjs
+          npm ci --prefix mcp-bridge
+
+      - name: Python proxy script
+        run: python3 -m py_compile scripts/phone-http-proxy.py
+
+      - name: Validate example configs
+        run: |
+          python3 -c "import json; json.load(open('config/mcp-android-phone.json.example'))"
+          python3 - <<'PY'
+          from pathlib import Path
+          for path in Path("config").glob("*.example"):
+              text = path.read_text(encoding="utf-8")
+              assert "=" in text or path.suffix == ".json.example", path
+          PY
+
+  sync-tags:
+    name: Sync release tags
+    if: github.event_name == 'push'
+    needs: [scripts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       - name: Sync tags to HEAD
-        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           git tag -fa latest -m "Latest main"
           git push origin refs/tags/latest --force
-          VERSION=""
-          if [ -f app/build.gradle.kts ]; then
-            VERSION=$(grep -m1 'versionName' app/build.gradle.kts | sed 's/.*"\([^"]*\)".*/\1/')
-          elif [ -f package.json ]; then
-            VERSION=$(node -p "require('./package.json').version")
-          fi
+          VERSION=$(node -p "require('./mcp-bridge/package.json').version")
           if [ -n "$VERSION" ]; then
             git tag -fa "v${VERSION}" -m "Release v${VERSION}"
             git push origin "refs/tags/v${VERSION}" --force
