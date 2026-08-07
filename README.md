@@ -6,7 +6,7 @@ Experimental bridge: connect **your Android phone** to a **Cursor Cloud Agent** 
 
 [![CI](https://github.com/Airuxn/PhoneConnect/actions/workflows/ci.yml/badge.svg)](https://github.com/Airuxn/PhoneConnect/actions/workflows/ci.yml)
 
-**Quality:** CI (ShellCheck, bridge smoke, npm audit) · CodeQL · Dependabot
+**Quality:** CI (ShellCheck, bridge smoke, npm audit) · CodeQL · Dependabot · Vercel `ignoreCommand` waits for CI + CodeQL if hosted on Vercel
 
 > Not a production product. API and scripts may change without notice.
 
