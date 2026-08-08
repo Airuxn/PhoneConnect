@@ -5,6 +5,8 @@ Experimental bridge: connect **your Android phone** to a **Cursor Cloud Agent** 
 **Status:** experimental · **Requires:** Android + PocketMCP + Tailscale + Cursor Cloud Agent · [MIT](LICENSE)
 
 [![CI](https://github.com/Airuxn/PhoneConnect/actions/workflows/ci.yml/badge.svg)](https://github.com/Airuxn/PhoneConnect/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Airuxn/PhoneConnect/branch/main/graph/badge.svg)](https://codecov.io/gh/Airuxn/PhoneConnect)
+[![License](https://img.shields.io/github/license/Airuxn/PhoneConnect)](LICENSE)
 
 **Quality:** CI (ShellCheck, bridge smoke, npm audit) · CodeQL · Dependabot · Vercel `ignoreCommand` waits for CI + CodeQL if hosted on Vercel
 

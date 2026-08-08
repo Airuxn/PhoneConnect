@@ -5,3 +5,8 @@ node_modules/
 .env.local
 config/secrets.env
 **/secrets.env
+
+.coverage
+__pycache__/
+.pytest_cache/
+*.pyc
